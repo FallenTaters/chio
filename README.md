@@ -74,7 +74,7 @@ copies data from r to w and sets the Content-Type to application/octet-stream
 
 ### WriteBlob
 
-writes v to the body and sets the Content-Type to application/octet-stream
+writes v to the body and automatically detects the Content-Type
 
 ## Middleware
 

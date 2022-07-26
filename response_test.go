@@ -60,9 +60,9 @@ func TestStreamBlob(t *testing.T) {
 
 	expected := `bla`
 
-	chio.StreamBlob(rec, http.StatusOK, strings.NewReader(expected))
+	chio.StreamBlob(rec, http.StatusOK, `application/octet-stream`, strings.NewReader(expected))
 	assert.Equal(t, rec.Code, http.StatusOK)
-	assert.DeepEqual(t, rec.Header().Get(`Content-Type`), `application/octet-stream`)
+	assert.Equal(t, rec.Header().Get(`Content-Type`), `application/octet-stream`)
 	assert.Equal(t, rec.Body.String(), "bla")
 }
 
@@ -73,6 +73,6 @@ func TestWriteBlob(t *testing.T) {
 
 	chio.WriteBlob(rec, http.StatusOK, []byte(expected))
 	assert.Equal(t, rec.Code, http.StatusOK)
-	assert.DeepEqual(t, rec.Header().Get(`Content-Type`), `application/octet-stream`)
+	assert.Equal(t, rec.Header().Get(`Content-Type`), `text/plain; charset=utf-8`)
 	assert.Equal(t, rec.Body.String(), "bla")
 }

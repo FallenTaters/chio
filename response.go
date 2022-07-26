@@ -41,19 +41,19 @@ func WriteXML(w http.ResponseWriter, code int, v any) {
 	}
 }
 
-// StreamBlob copies data from r to w and sets the Content-Type to application/octet-stream
-func StreamBlob(w http.ResponseWriter, code int, r io.Reader) {
+// StreamBlob copies data from r to w
+func StreamBlob(w http.ResponseWriter, code int, contentType string, r io.Reader) {
 	w.WriteHeader(code)
-	w.Header().Set(`Content-Type`, `application/octet-stream`)
+	w.Header().Set(`Content-Type`, contentType)
 	if _, err := io.Copy(w, r); err != nil {
 		panic(fmt.Errorf(`error streaming blob into response: %w`, err))
 	}
 }
 
-// WriteBlob writes v to the body and sets the Content-Type to application/octet-stream
+// WriteBlob writes v to the body and automatically detects the Content-Type
 func WriteBlob(w http.ResponseWriter, code int, v []byte) {
 	w.WriteHeader(code)
-	w.Header().Set(`Content-Type`, `application/octet-stream`)
+	w.Header().Set(`Content-Type`, http.DetectContentType(v))
 	if _, err := w.Write(v); err != nil {
 		panic(fmt.Errorf(`error writing blob into response: %w`, err))
 	}

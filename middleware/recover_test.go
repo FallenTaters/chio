@@ -74,7 +74,7 @@ func TestRecover(t *testing.T) {
 	assert.True(t, stck == nil)
 	assert.Equal(t, rec.Code, http.StatusOK)
 
-	// don't overwrite status code
+	// overwrite status code
 	v, stck, code = nil, nil, http.StatusBadRequest
 	pnc = 0
 	rec = httptest.NewRecorder()
@@ -85,7 +85,7 @@ func TestRecover(t *testing.T) {
 	h.ServeHTTP(rec, req)
 	assert.True(t, v == 0)
 	assert.True(t, stck != nil)
-	assert.Equal(t, rec.Code, http.StatusBadRequest)
+	assert.Equal(t, rec.Code, http.StatusInternalServerError)
 }
 
 func TestDefaultPanicLogger(t *testing.T) {
