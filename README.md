@@ -70,11 +70,11 @@ writes v to the body as WriteXML and sets the Content-Type to application/xml. I
 
 ### StreamBlob
 
-copies data from r to w and sets the Content-Type to application/octet-stream
+copies data from r to w
 
 ### WriteBlob
 
-writes v to the body and sets the Content-Type to application/octet-stream
+writes v to the body
 
 ## Middleware
 
