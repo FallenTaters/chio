@@ -14,7 +14,7 @@ func Recover(f func(w http.ResponseWriter, r *http.Request, panicValue any, stac
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ww := &statusWriter{ResponseWriter: w}
-			defer ww.WriteStatus()
+			defer ww.writeStatus()
 
 			defer func() {
 				v := recover()
@@ -24,10 +24,12 @@ func Recover(f func(w http.ResponseWriter, r *http.Request, panicValue any, stac
 				if v != nil {
 					stack := getPanicStack()
 
-					ww.WriteHeader(http.StatusInternalServerError) // set default
+					ww.code = http.StatusInternalServerError
+					ww.skip = true
 					if f != nil {
 						f(ww, r, v, stack)
 					}
+					ww.writeStatus()
 				}
 			}()
 
@@ -86,15 +88,29 @@ func getPanicStack() []StackTraceEntry {
 type statusWriter struct {
 	http.ResponseWriter
 
-	code int
+	code      int
+	wroteCode bool
+	skip      bool
 }
 
 func (ssw *statusWriter) WriteHeader(code int) {
+	if ssw.code != 0 && !ssw.skip { // superfluous write
+		ssw.wroteCode = true
+		ssw.ResponseWriter.WriteHeader(ssw.code)
+		return
+	}
+
 	ssw.code = code
 }
 
-func (ssw *statusWriter) WriteStatus() {
-	if ssw.code != 0 {
+func (ssw *statusWriter) Write(data []byte) (int, error) {
+	ssw.writeStatus()
+	return ssw.ResponseWriter.Write(data) //nolint:wrapcheck
+}
+
+func (ssw *statusWriter) writeStatus() {
+	if !ssw.wroteCode && ssw.code != 0 {
+		ssw.wroteCode = true
 		ssw.ResponseWriter.WriteHeader(ssw.code)
 	}
 }

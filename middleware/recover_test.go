@@ -14,15 +14,19 @@ import (
 func TestRecover(t *testing.T) {
 	var v any
 	var stck []middleware.StackTraceEntry
-	var code int
+	var codeInPanic int
+	var codeInHandler int
 	mw := middleware.Recover(func(w http.ResponseWriter, r *http.Request, panicValue any, stack []middleware.StackTraceEntry) {
 		v, stck = panicValue, stack
-		if code != 0 {
-			w.WriteHeader(code)
+		if codeInPanic != 0 {
+			w.WriteHeader(codeInPanic)
 		}
 	})
 	var pnc any = nil
 	h := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if codeInHandler != 0 {
+			w.WriteHeader(codeInHandler)
+		}
 		if pnc != nil {
 			panic(pnc)
 		}
@@ -40,7 +44,7 @@ func TestRecover(t *testing.T) {
 	assert.Equal(t, rec.Code, http.StatusOK)
 
 	// do panic
-	v, stck, code = nil, nil, 0
+	v, stck, codeInPanic, codeInHandler = nil, nil, 0, 0
 	pnc = 0
 	rec = httptest.NewRecorder()
 	req, err = http.NewRequest(http.MethodGet, ``, nil)
@@ -56,7 +60,7 @@ func TestRecover(t *testing.T) {
 	assert.Equal(t, rec.Code, http.StatusInternalServerError)
 
 	// http.ErrAbortHandler
-	v, stck, code = nil, nil, 0
+	v, stck, codeInPanic, codeInHandler = nil, nil, 0, 0
 	pnc = http.ErrAbortHandler
 	rec = httptest.NewRecorder()
 	req, err = http.NewRequest(http.MethodGet, ``, nil)
@@ -75,17 +79,38 @@ func TestRecover(t *testing.T) {
 	assert.Equal(t, rec.Code, http.StatusOK)
 
 	// overwrite status code
-	v, stck, code = nil, nil, http.StatusBadRequest
+	v, stck, codeInPanic, codeInHandler = nil, nil, http.StatusBadRequest, http.StatusUnauthorized
 	pnc = 0
-	rec = httptest.NewRecorder()
+	rec2 := &writeCounter{httptest.NewRecorder(), nil}
 	req, err = http.NewRequest(http.MethodGet, ``, nil)
 	if err != nil {
 		panic(err)
 	}
-	h.ServeHTTP(rec, req)
+	h.ServeHTTP(rec2, req)
 	assert.True(t, v == 0)
 	assert.True(t, stck != nil)
-	assert.Equal(t, rec.Code, http.StatusInternalServerError)
+	assert.Equal(t, rec2.Code, http.StatusBadRequest)
+	assert.DeepEqual(t, rec2.writes, []int{http.StatusBadRequest})
+
+	v, stck, codeInPanic, codeInHandler = nil, nil, 0, http.StatusUnauthorized
+	rec2 = &writeCounter{httptest.NewRecorder(), nil}
+	h.ServeHTTP(rec2, req)
+	assert.DeepEqual(t, rec2.writes, []int{http.StatusInternalServerError})
+
+	v, stck, codeInPanic, codeInHandler = nil, nil, 0, 0
+	rec2 = &writeCounter{httptest.NewRecorder(), nil}
+	h.ServeHTTP(rec2, req)
+	assert.DeepEqual(t, rec2.writes, []int{http.StatusInternalServerError})
+}
+
+type writeCounter struct {
+	*httptest.ResponseRecorder
+	writes []int
+}
+
+func (w *writeCounter) WriteHeader(code int) {
+	w.writes = append(w.writes, code)
+	w.ResponseRecorder.WriteHeader(code)
 }
 
 func TestDefaultPanicLogger(t *testing.T) {
