@@ -14,6 +14,7 @@ func Recover(f func(w http.ResponseWriter, r *http.Request, panicValue any, stac
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ww := &statusWriter{ResponseWriter: w}
+			defer ww.WriteStatus()
 
 			defer func() {
 				v := recover()
@@ -27,9 +28,7 @@ func Recover(f func(w http.ResponseWriter, r *http.Request, panicValue any, stac
 						f(ww, r, v, stack)
 					}
 
-					if ww.code == 0 {
-						w.WriteHeader(http.StatusInternalServerError)
-					}
+					w.WriteHeader(http.StatusInternalServerError)
 				}
 			}()
 
@@ -93,5 +92,10 @@ type statusWriter struct {
 
 func (ssw *statusWriter) WriteHeader(code int) {
 	ssw.code = code
-	ssw.ResponseWriter.WriteHeader(code)
+}
+
+func (ssw *statusWriter) WriteStatus() {
+	if ssw.code != 0 {
+		ssw.ResponseWriter.WriteHeader(ssw.code)
+	}
 }
