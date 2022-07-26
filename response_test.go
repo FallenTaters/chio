@@ -71,8 +71,8 @@ func TestWriteBlob(t *testing.T) {
 
 	expected := `bla`
 
-	chio.WriteBlob(rec, http.StatusOK, []byte(expected))
+	chio.WriteBlob(rec, http.StatusOK, `application/octet-stream`, []byte(expected))
 	assert.Equal(t, rec.Code, http.StatusOK)
-	assert.Equal(t, rec.Header().Get(`Content-Type`), `text/plain; charset=utf-8`)
+	assert.Equal(t, rec.Header().Get(`Content-Type`), `application/octet-stream`)
 	assert.Equal(t, rec.Body.String(), "bla")
 }
