@@ -24,11 +24,10 @@ func Recover(f func(w http.ResponseWriter, r *http.Request, panicValue any, stac
 				if v != nil {
 					stack := getPanicStack()
 
+					ww.WriteHeader(http.StatusInternalServerError) // set default
 					if f != nil {
 						f(ww, r, v, stack)
 					}
-
-					w.WriteHeader(http.StatusInternalServerError)
 				}
 			}()
 
